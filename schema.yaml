@@ -1,0 +1,42 @@
+schema: |-
+  definition user {}
+
+  definition organization {
+  	relation reader: user
+  	permission read = reader
+  }
+
+  definition department {
+  	relation org: organization
+  	relation reader: user
+  	permission read = reader + org->read
+  }
+
+  definition employee {
+  	relation dep: department
+  	relation reader: user
+  	permission read = reader + dep->read
+  }
+relationships: |-
+  department:marketing#org@organization:company-a
+  department:it#org@organization:company-a
+  department:hr#org@organization:company-b
+
+  employee:lisa#dep@department:marketing
+  employee:mira#dep@department:hr
+  employee:julia#dep@department:it
+
+  organization:company-a#reader@user:max
+  department:it#reader@user:tom
+assertions:
+  assertTrue:
+    - employee:lisa#read@user:max
+    - employee:julia#read@user:max
+    - employee:julia#read@user:tom
+  assertFalse:
+    - employee:mira#read@user:max
+    - employee:lisa#read@user:tom
+    - employee:mira#read@user:tom
+validation:
+  employee:lisa#read:
+    - "[user:max] is <organization:company-a#reader>"
