@@ -2,41 +2,75 @@ schema: |-
   definition user {}
 
   definition organization {
-  	relation reader: user
-  	permission read = reader
+    relation reader: user
+    permission read = reader
+  }
+
+  definition location {
+    relation parent: organization
+    relation reader: user
+    permission read = reader + parent->read
   }
 
   definition department {
-  	relation org: organization
-  	relation reader: user
-  	permission read = reader + org->read
+    relation parent: organization | location
+    relation reader: user
+    permission read = reader + parent->read
   }
+
+  definition team {
+      relation parent: organization | location | department
+      relation reader: user
+      permission read = reader + parent->read
+    }
 
   definition employee {
-  	relation dep: department
-  	relation reader: user
-  	permission read = reader + dep->read
+    relation parent: organization | location | department | team
+    relation reader: user
+    permission read = reader + parent->read
   }
 relationships: |-
-  department:marketing#org@organization:company-a
-  department:it#org@organization:company-a
-  department:hr#org@organization:company-b
+  location:us#parent@organization:company-int
 
-  employee:lisa#dep@department:marketing
-  employee:mira#dep@department:hr
-  employee:julia#dep@department:it
+  department:marketing#parent@organization:company-a
+  department:it#parent@organization:company-a
+  department:hr#parent@organization:company-b
+  department:sales#parent@location:us
+
+  team:hr-1#parent@department:hr
+  team:team-b#parent@organization:company-b
+
+  employee:marry#parent@location:us
+  employee:lisa#parent@department:marketing
+  employee:mira#parent@department:hr
+  employee:julia#parent@department:it
+  employee:dina#parent@department:sales
+  employee:lin#parent@team:hr-1
+  employee:stacy#parent@team:team-b
 
   organization:company-a#reader@user:max
+  organization:company-b#reader@user:stan
+  location:us#reader@user:frank
   department:it#reader@user:tom
+  department:hr#reader@user:sven
+  team:hr-1#reader@user:fred
 assertions:
   assertTrue:
-    - employee:lisa#read@user:max
-    - employee:julia#read@user:max
-    - employee:julia#read@user:tom
+    - "employee:lisa#read@user:max"
+    - "employee:julia#read@user:max"
+    - "employee:julia#read@user:tom"
+    - "employee:mira#read@user:sven"
+    - "employee:lin#read@user:sven"
+    - "employee:lin#read@user:fred"
+    - "employee:stacy#read@user:stan"
+    - "employee:marry#read@user:frank"
+    - "employee:dina#read@user:frank"
   assertFalse:
-    - employee:mira#read@user:max
-    - employee:lisa#read@user:tom
-    - employee:mira#read@user:tom
+    - "employee:mira#read@user:max"
+    - "employee:lisa#read@user:tom"
+    - "employee:mira#read@user:tom"
+    - "employee:mira#read@user:fred"
+    - "employee:lin#read@user:frank"
 validation:
   employee:lisa#read:
     - "[user:max] is <organization:company-a#reader>"
