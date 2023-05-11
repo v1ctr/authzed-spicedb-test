@@ -19,3 +19,11 @@
 ## Validating schema
 
     zed validate schema.yaml
+
+## List all people a person has read access for
+
+    zed permission lookup-resources person read person:tom
+
+## List all fields a person has read access for
+
+    zed permission lookup-resources field read person:lin

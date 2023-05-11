@@ -1,76 +1,170 @@
 schema: |-
-  definition user {}
+  definition person {
+    relation parent: organization | location | department | team
+    relation reader: person
+    permission read = reader + parent->read
+  }
 
   definition organization {
-    relation reader: user
+    relation member: person
+    relation reader: person
     permission read = reader
   }
 
   definition location {
-    relation parent: organization
-    relation reader: user
-    permission read = reader + parent->read
+    relation member: person
+    relation reader: person
+    permission read = reader
   }
 
   definition department {
-    relation parent: organization | location
-    relation reader: user
-    permission read = reader + parent->read
+    relation member: person
+    relation reader: person
+    permission read = reader
   }
 
   definition team {
-      relation parent: organization | location | department
-      relation reader: user
-      permission read = reader + parent->read
-    }
-
-  definition employee {
-    relation parent: organization | location | department | team
-    relation reader: user
-    permission read = reader + parent->read
+    relation member: person
+    relation reader: person
+    permission read = reader
   }
+
+  definition field {
+    relation reader: person | team#member | department#member | location#member | organization#member
+    permission read = reader
+  }
+
 relationships: |-
-  location:us#parent@organization:company-int
+  // Add people to various organization
+  organization:org_a#member@person:marry
+  person:marry#parent@organization:org_a
 
-  department:marketing#parent@organization:company-a
-  department:it#parent@organization:company-a
-  department:hr#parent@organization:company-b
-  department:sales#parent@location:us
+  organization:org_a#member@person:lisa
+  person:lisa#parent@organization:org_a
 
-  team:hr-1#parent@department:hr
-  team:team-b#parent@organization:company-b
+  organization:org_a#member@person:mira
+  person:mira#parent@organization:org_a
 
-  employee:marry#parent@location:us
-  employee:lisa#parent@department:marketing
-  employee:mira#parent@department:hr
-  employee:julia#parent@department:it
-  employee:dina#parent@department:sales
-  employee:lin#parent@team:hr-1
-  employee:stacy#parent@team:team-b
+  organization:org_b#member@person:julia
+  person:julia#parent@organization:org_b
 
-  organization:company-a#reader@user:max
-  organization:company-b#reader@user:stan
-  location:us#reader@user:frank
-  department:it#reader@user:tom
-  department:hr#reader@user:sven
-  team:hr-1#reader@user:fred
+  organization:org_b#member@person:dina
+  person:dina#parent@organization:org_b
+
+  organization:org_b#member@person:lin
+  person:lin#parent@organization:org_b
+
+  organization:org_b#member@person:stacy
+  person:stacy#parent@organization:org_b
+
+  // Add people to various locations
+  location:us#member@person:marry
+  person:marry#parent@location:us
+
+  location:us#member@person:lisa
+  person:lisa#parent@location:us
+
+  location:us#member@person:dina
+  person:dina#parent@location:us
+
+  location:eu#member@person:mira
+  person:mira#parent@location:eu
+
+  location:eu#member@person:lin
+  person:lin#parent@location:eu
+
+  // Add people to various departments
+  department:marketing#member@person:marry
+  person:marry#parent@department:marketing
+
+  department:marketing#member@person:lisa
+  person:lisa#parent@department:marketing
+
+  department:it#member@person:mira
+  person:mira#parent@department:it
+
+  department:it#member@person:julia
+  person:julia#parent@department:it
+
+  department:hr#member@person:dina
+  person:dina#parent@department:hr
+
+  department:hr#member@person:lin
+  person:lin#parent@department:hr
+
+  department:sales#member@person:stacy
+  person:stacy#parent@department:sales
+
+  // Add people to various teams
+  team:hr_1#member@person:dina
+  person:dina#parent@team:hr_1
+
+  team:hr_2#member@person:lin
+  person:lin#parent@team:hr_2
+
+  // Set read permissions on some people
+  organization:org_a#reader@person:max
+  location:us#reader@person:frank
+  department:it#reader@person:tom
+  team:hr_1#reader@person:fred
+
+  // Set read permissions on some fields
+  field:field_a#reader@person:marry
+  field:field_a#reader@location:eu#member
+  field:field_b#reader@organization:org_a#member
+  field:field_c#reader@department:hr#member
+  field:field_d#reader@team:hr_1#member
+  field:field_d#reader@department:sales#member
 assertions:
   assertTrue:
-    - "employee:lisa#read@user:max"
-    - "employee:julia#read@user:max"
-    - "employee:julia#read@user:tom"
-    - "employee:mira#read@user:sven"
-    - "employee:lin#read@user:sven"
-    - "employee:lin#read@user:fred"
-    - "employee:stacy#read@user:stan"
-    - "employee:marry#read@user:frank"
-    - "employee:dina#read@user:frank"
+    - "person:marry#read@person:max"
+    - "person:lisa#read@person:max"
+    - "person:mira#read@person:max"
+    - "person:marry#read@person:frank"
+    - "person:lisa#read@person:frank"
+    - "person:dina#read@person:frank"
+    - "person:mira#read@person:tom"
+    - "person:julia#read@person:tom"
+    - "person:dina#read@person:fred"
+    - "field:field_a#read@person:marry"
+    - "field:field_a#read@person:mira"
+    - "field:field_a#read@person:lin"
+    - "field:field_b#read@person:marry"
+    - "field:field_b#read@person:lisa"
+    - "field:field_b#read@person:mira"
+    - "field:field_c#read@person:dina"
+    - "field:field_c#read@person:lin"
+    - "field:field_d#read@person:dina"
+    - "field:field_d#read@person:stacy"
   assertFalse:
-    - "employee:mira#read@user:max"
-    - "employee:lisa#read@user:tom"
-    - "employee:mira#read@user:tom"
-    - "employee:mira#read@user:fred"
-    - "employee:lin#read@user:frank"
-validation:
-  employee:lisa#read:
-    - "[user:max] is <organization:company-a#reader>"
+    - "person:julia#read@person:max"
+    - "person:dina#read@person:max"
+    - "person:lin#read@person:max"
+    - "person:stacy#read@person:max"
+    - "person:mira#read@person:frank"
+    - "person:lin#read@person:frank"
+    - "person:marry#read@person:tom"
+    - "person:lisa#read@person:tom"
+    - "person:dina#read@person:tom"
+    - "person:lin#read@person:tom"
+    - "person:stacy#read@person:tom"
+    - "person:lin#read@person:fred"
+    - "person:julia#read@person:fred"
+    - "field:field_a#read@person:lisa"
+    - "field:field_a#read@person:julia"
+    - "field:field_a#read@person:dina"
+    - "field:field_a#read@person:stacy"
+    - "field:field_b#read@person:julia"
+    - "field:field_b#read@person:dina"
+    - "field:field_b#read@person:lin"
+    - "field:field_b#read@person:stacy"
+    - "field:field_c#read@person:marry"
+    - "field:field_c#read@person:lisa"
+    - "field:field_c#read@person:mira"
+    - "field:field_c#read@person:julia"
+    - "field:field_c#read@person:stacy"
+    - "field:field_d#read@person:marry"
+    - "field:field_d#read@person:lisa"
+    - "field:field_d#read@person:mira"
+    - "field:field_d#read@person:julia"
+    - "field:field_d#read@person:lin"
